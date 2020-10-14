@@ -24,6 +24,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "bno055.h"
+#include "dfrobot_imu.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -36,8 +37,6 @@
 const uint8_t num_of_bytes_read = 18;		// Read number of bytes from IMU (24 for ACCGYRO; 38 for NDOF)
 const uint8_t IMU_NUMBER_OF_BYTES = 18;
 
-uint8_t get_readings[1] 	= {BNO055_ACC_DATA_X_LSB};
-
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -47,13 +46,12 @@ uint8_t get_readings[1] 	= {BNO055_ACC_DATA_X_LSB};
 
 /* Private variables ---------------------------------------------------------*/
 I2C_HandleTypeDef hi2c1;
-I2C_HandleTypeDef hi2c2;
 
 TIM_HandleTypeDef htim1;
 
 /* USER CODE BEGIN PV */
-
-float		acc_x, acc_y, acc_z;
+float x,y,z;
+int16_t		gyro_x, gyro_y, gyro_z;
 
 /* USER CODE END PV */
 
@@ -61,7 +59,6 @@ float		acc_x, acc_y, acc_z;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_I2C1_Init(void);
-static void MX_I2C2_Init(void);
 static void MX_TIM1_Init(void);
 /* USER CODE BEGIN PFP */
 
@@ -79,8 +76,7 @@ static void MX_TIM1_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-	uint8_t		imu_readings[IMU_NUMBER_OF_BYTES];
-	int16_t 	accel_data[3];
+	uint8_t		imu_readings[18];
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -102,7 +98,6 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_I2C1_Init();
-  MX_I2C2_Init();
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
 
@@ -115,14 +110,20 @@ int main(void)
   while (1)
   {
 
-	  HAL_Delay(300);
-		//  GetAccelData(&hi2c1, (uint8_t*)imu_readings);
-		  accel_data[0] = (((int16_t)((uint8_t *)(imu_readings))[1] << 8) | ((uint8_t *)(imu_readings))[0]);      // Turn the MSB and LSB into a signed 16-bit value
-		  accel_data[1] = (((int16_t)((uint8_t *)(imu_readings))[3] << 8) | ((uint8_t *)(imu_readings))[2]);
-		  accel_data[2] = (((int16_t)((uint8_t *)(imu_readings))[5] << 8) | ((uint8_t *)(imu_readings))[4]);
-		  acc_x = ((float)(accel_data[0]))/100.0f; //m/s2
-		  acc_y = ((float)(accel_data[1]))/100.0f;
-		  acc_z = ((float)(accel_data[2]))/100.0f;
+	  HAL_Delay(100);
+
+	  //get data
+	  Gyro_Data(&hi2c1, (uint8_t*)imu_readings);
+
+	  gyro_x = (int16_t)((((uint8_t*)imu_readings)[1] << 8)  | ((uint8_t*)imu_readings)[0]);
+
+	  gyro_y = (int16_t)((((uint8_t*)imu_readings)[3] << 8)  | ((uint8_t*)imu_readings)[2]);
+
+	  gyro_z = (int16_t)((((uint8_t*)imu_readings)[5] << 8)  | ((uint8_t*)imu_readings)[4]);
+
+	  x = ((float)(gyro_x))/16.0f;
+	  y = ((float)(gyro_y))/16.0f;
+	  z = ((float)(gyro_z))/16.0f;
 
 	  HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_14);
 
@@ -211,40 +212,6 @@ static void MX_I2C1_Init(void)
 }
 
 /**
-  * @brief I2C2 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_I2C2_Init(void)
-{
-
-  /* USER CODE BEGIN I2C2_Init 0 */
-
-  /* USER CODE END I2C2_Init 0 */
-
-  /* USER CODE BEGIN I2C2_Init 1 */
-
-  /* USER CODE END I2C2_Init 1 */
-  hi2c2.Instance = I2C2;
-  hi2c2.Init.ClockSpeed = 400000;
-  hi2c2.Init.DutyCycle = I2C_DUTYCYCLE_2;
-  hi2c2.Init.OwnAddress1 = 0;
-  hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
-  hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
-  hi2c2.Init.OwnAddress2 = 0;
-  hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-  hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-  if (HAL_I2C_Init(&hi2c2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN I2C2_Init 2 */
-
-  /* USER CODE END I2C2_Init 2 */
-
-}
-
-/**
   * @brief TIM1 Initialization Function
   * @param None
   * @retval None
@@ -324,8 +291,8 @@ static void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOE_CLK_ENABLE();
-  __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
