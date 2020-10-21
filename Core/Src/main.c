@@ -20,11 +20,16 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "i2c.h"
+#include "tim.h"
+#include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "bno055.h"
 #include "dfrobot_imu.h"
+#include "motor_driver.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -34,8 +39,6 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-const uint8_t num_of_bytes_read = 18;		// Read number of bytes from IMU (24 for ACCGYRO; 38 for NDOF)
-const uint8_t IMU_NUMBER_OF_BYTES = 18;
 
 /* USER CODE END PD */
 
@@ -45,9 +48,6 @@ const uint8_t IMU_NUMBER_OF_BYTES = 18;
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-I2C_HandleTypeDef hi2c1;
-
-TIM_HandleTypeDef htim1;
 
 /* USER CODE BEGIN PV */
 float x,y,z;
@@ -57,9 +57,6 @@ int16_t		gyro_x, gyro_y, gyro_z;
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-static void MX_GPIO_Init(void);
-static void MX_I2C1_Init(void);
-static void MX_TIM1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -76,7 +73,13 @@ static void MX_TIM1_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-	uint8_t		imu_readings[18];
+
+	//Variables for euler data non calibrated
+
+	uint8_t imu_eul_x[2];
+	uint8_t	imu_eul_y[2];
+	uint8_t	imu_eul_z[2];
+
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -100,7 +103,7 @@ int main(void)
   MX_I2C1_Init();
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
-
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   IMU_Initialize(&hi2c1);
 
   /* USER CODE END 2 */
@@ -109,24 +112,44 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  // IMU SENSOR
+	  /*
 
-	  HAL_Delay(100);
+	  Euler_Data(&hi2c1, (uint8_t*)imu_eul_x, (uint8_t*)imu_eul_y, (uint8_t*)imu_eul_z);
 
-	  //get data
-	  Gyro_Data(&hi2c1, (uint8_t*)imu_readings);
+	  gyro_x = (int16_t)((((uint8_t*)imu_eul_x)[1] << 8)  | ((uint8_t*)imu_eul_x)[0]);
 
-	  gyro_x = (int16_t)((((uint8_t*)imu_readings)[1] << 8)  | ((uint8_t*)imu_readings)[0]);
+	  gyro_y = (int16_t)((((uint8_t*)imu_eul_y)[1] << 8)  | ((uint8_t*)imu_eul_y)[0]);
 
-	  gyro_y = (int16_t)((((uint8_t*)imu_readings)[3] << 8)  | ((uint8_t*)imu_readings)[2]);
-
-	  gyro_z = (int16_t)((((uint8_t*)imu_readings)[5] << 8)  | ((uint8_t*)imu_readings)[4]);
+	  gyro_z = (int16_t)((((uint8_t*)imu_eul_z)[1] << 8)  | ((uint8_t*)imu_eul_z)[0]);
 
 	  x = ((float)(gyro_x))/16.0f;
 	  y = ((float)(gyro_y))/16.0f;
 	  z = ((float)(gyro_z))/16.0f;
 
+
+
 	  HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_14);
 
+	  HAL_Delay(100);
+	   */
+
+	  // MOTOR DRIVER
+	  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 600);
+	 HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
+
+
+	 HAL_Delay(3000);
+	 __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 200);
+	 HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
+
+	 //__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 100);
+	 HAL_Delay(3000);
+
+
+
+
+	 //HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_14);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -175,135 +198,6 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-}
-
-/**
-  * @brief I2C1 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_I2C1_Init(void)
-{
-
-  /* USER CODE BEGIN I2C1_Init 0 */
-
-  /* USER CODE END I2C1_Init 0 */
-
-  /* USER CODE BEGIN I2C1_Init 1 */
-
-  /* USER CODE END I2C1_Init 1 */
-  hi2c1.Instance = I2C1;
-  hi2c1.Init.ClockSpeed = 100000;
-  hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
-  hi2c1.Init.OwnAddress1 = 0;
-  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
-  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
-  hi2c1.Init.OwnAddress2 = 0;
-  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN I2C1_Init 2 */
-
-  /* USER CODE END I2C1_Init 2 */
-
-}
-
-/**
-  * @brief TIM1 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_TIM1_Init(void)
-{
-
-  /* USER CODE BEGIN TIM1_Init 0 */
-
-  /* USER CODE END TIM1_Init 0 */
-
-  TIM_MasterConfigTypeDef sMasterConfig = {0};
-  TIM_OC_InitTypeDef sConfigOC = {0};
-  TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig = {0};
-
-  /* USER CODE BEGIN TIM1_Init 1 */
-
-  /* USER CODE END TIM1_Init 1 */
-  htim1.Instance = TIM1;
-  htim1.Init.Prescaler = 0;
-  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 0;
-  htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim1.Init.RepetitionCounter = 0;
-  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_PWM_Init(&htim1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 0;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-  sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
-  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
-  sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
-  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
-  sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
-  sBreakDeadTimeConfig.LockLevel = TIM_LOCKLEVEL_OFF;
-  sBreakDeadTimeConfig.DeadTime = 0;
-  sBreakDeadTimeConfig.BreakState = TIM_BREAK_DISABLE;
-  sBreakDeadTimeConfig.BreakPolarity = TIM_BREAKPOLARITY_HIGH;
-  sBreakDeadTimeConfig.AutomaticOutput = TIM_AUTOMATICOUTPUT_DISABLE;
-  if (HAL_TIMEx_ConfigBreakDeadTime(&htim1, &sBreakDeadTimeConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN TIM1_Init 2 */
-
-  /* USER CODE END TIM1_Init 2 */
-  HAL_TIM_MspPostInit(&htim1);
-
-}
-
-/**
-  * @brief GPIO Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_GPIO_Init(void)
-{
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-
-  /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOE_CLK_ENABLE();
-  __HAL_RCC_GPIOD_CLK_ENABLE();
-  __HAL_RCC_GPIOB_CLK_ENABLE();
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin : LED_Pin */
-  GPIO_InitStruct.Pin = LED_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(LED_GPIO_Port, &GPIO_InitStruct);
-
 }
 
 /* USER CODE BEGIN 4 */

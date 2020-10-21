@@ -11,7 +11,7 @@ uint8_t GYRO_Mode = NormalG;
 
 //Variables for BNO055 Settings
 uint8_t Power_Mode = Normalpwr;
-uint8_t Operation_Mode = IMU;  //Only GYRO is working
+uint8_t Operation_Mode = NDOF;  //Only GYRO is working
 
 void IMU_Initialize(I2C_HandleTypeDef *hi2c_d)
 {
@@ -64,6 +64,25 @@ uint8_t Gyro_Data(I2C_HandleTypeDef *hi2c_d, uint8_t* gyro_data)
 	//Katy eulera
 	status = HAL_I2C_Mem_Read(hi2c_d, IMU_ADDRESS, BNO055_EUL_ROLL_LSB, I2C_MEMADD_SIZE_8BIT, gyro_data, 6, 100);
 
+	return status;
+}
+
+
+/*
+ * Read Euler Angles
+ * 6 for: X - L i M, Y - L i M, Z - L i M
+ *
+ */
+
+uint8_t Euler_Data(I2C_HandleTypeDef *hi2c_d, uint8_t* eul_roll_x, uint8_t* eul_pitch_y, uint8_t* eul_heading_z)
+{
+	uint8_t status;
+
+	status = HAL_I2C_Mem_Read(hi2c_d, IMU_ADDRESS, BNO055_EUL_ROLL_LSB, I2C_MEMADD_SIZE_8BIT, eul_roll_x, 2, 100);
+	status = HAL_I2C_Mem_Read(hi2c_d, IMU_ADDRESS, BNO055_EUL_PITCH_LSB, I2C_MEMADD_SIZE_8BIT, eul_pitch_y, 2, 100);
+	status = HAL_I2C_Mem_Read(hi2c_d, IMU_ADDRESS, BNO055_EUL_HEADING_LSB, I2C_MEMADD_SIZE_8BIT, eul_heading_z, 2, 100);
+
 
 	return status;
 }
+
