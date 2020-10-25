@@ -29,7 +29,6 @@
 #include "bno055.h"
 #include "dfrobot_imu.h"
 #include "motor_driver.h"
-
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -52,6 +51,8 @@
 /* USER CODE BEGIN PV */
 float x,y,z;
 int16_t		gyro_x, gyro_y, gyro_z;
+unsigned int rot;
+int duty;
 
 /* USER CODE END PV */
 
@@ -74,8 +75,10 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
 
-	//Variables for euler data non calibrated
+	//structure for motor1 driver
+	Motor_HandleTypeDef motor1;
 
+	//Variables for euler data non calibrated
 	uint8_t imu_eul_x[2];
 	uint8_t	imu_eul_y[2];
 	uint8_t	imu_eul_z[2];
@@ -103,7 +106,17 @@ int main(void)
   MX_I2C1_Init();
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
-  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+
+  //Values set for structure
+  motor1.timer = &htim1;
+  motor1.channel = TIM_CHANNEL_1;
+  motor1.gpio_port = GPIOD;
+  motor1.pin_gpio = GPIO_PIN_14;
+
+  Start_PWM_Motor_Z(&motor1);
+
+
+  //HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   IMU_Initialize(&hi2c1);
 
   /* USER CODE END 2 */
@@ -135,21 +148,17 @@ int main(void)
 	   */
 
 	  // MOTOR DRIVER
-	  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 600);
-	 HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
+	  Speed_Motor(&motor1, 1, 0);
+	  HAL_Delay(2000);
+	  Speed_Motor(&motor1, 1, 200);
+	  HAL_Delay(2000);
+	  Speed_Motor(&motor1, 1, 400);
+	  HAL_Delay(2000);
+	  Speed_Motor(&motor1, 1, 600);
+	  HAL_Delay(2000);
+	  Speed_Motor(&motor1, 1, 800);
 
 
-	 HAL_Delay(3000);
-	 __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 200);
-	 HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
-
-	 //__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 100);
-	 HAL_Delay(3000);
-
-
-
-
-	 //HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_14);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
