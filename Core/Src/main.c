@@ -110,8 +110,8 @@ int main(void)
   //Values set for structure
   motor1.timer = &htim1;
   motor1.channel = TIM_CHANNEL_1;
-  motor1.gpio_port = GPIOD;
-  motor1.pin_gpio = GPIO_PIN_14;
+  motor1.gpio_port = GPIOA;
+  motor1.pin_gpio = GPIO_PIN_8;
 
   Start_PWM_Motor_Z(&motor1);
 

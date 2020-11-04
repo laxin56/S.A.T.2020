@@ -59,8 +59,24 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define Motor_Direction_Pin GPIO_PIN_8
-#define Motor_Direction_GPIO_Port GPIOA
+#define PWM_Motor_X_Pin GPIO_PIN_9
+#define PWM_Motor_X_GPIO_Port GPIOE
+#define PWM_Motor_Y_Pin GPIO_PIN_11
+#define PWM_Motor_Y_GPIO_Port GPIOE
+#define PWM_Motor_Z_Pin GPIO_PIN_13
+#define PWM_Motor_Z_GPIO_Port GPIOE
+#define LED_Z_Pin GPIO_PIN_13
+#define LED_Z_GPIO_Port GPIOD
+#define LED_Y_Pin GPIO_PIN_14
+#define LED_Y_GPIO_Port GPIOD
+#define LED_X_Pin GPIO_PIN_15
+#define LED_X_GPIO_Port GPIOD
+#define Motor_Z_Direction_Pin GPIO_PIN_8
+#define Motor_Z_Direction_GPIO_Port GPIOA
+#define Motor_Y_Direction_Pin GPIO_PIN_9
+#define Motor_Y_Direction_GPIO_Port GPIOA
+#define Motor_X_Direction_Pin GPIO_PIN_10
+#define Motor_X_Direction_GPIO_Port GPIOA
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
