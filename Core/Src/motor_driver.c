@@ -7,10 +7,10 @@
 
 #include "motor_driver.h"
 
-void Start_PWM_Motor_Z(Motor_HandleTypeDef* motor1){
+void Start_PWM_Motor_Z(Motor_HandleTypeDef* motor){
 
-	//Begin PWM for the timer1 and channel1
-	HAL_TIM_PWM_Start(motor1->timer, motor1->channel);
+	//Begin PWM
+	HAL_TIM_PWM_Start(motor->timer, motor->channel);
 
 }
 
@@ -32,6 +32,8 @@ void Speed_Motor(Motor_HandleTypeDef* motor, unsigned int rotation, int duty){
 	}
 
 	//Set speed
+	// duty can be set like 0-1000
 	__HAL_TIM_SET_COMPARE(motor->timer, motor->channel, duty);
 
 }
+

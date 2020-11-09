@@ -65,8 +65,6 @@ void Error_Handler(void);
 #define PWM_Motor_Y_GPIO_Port GPIOE
 #define PWM_Motor_Z_Pin GPIO_PIN_13
 #define PWM_Motor_Z_GPIO_Port GPIOE
-#define LED_Z_Pin GPIO_PIN_13
-#define LED_Z_GPIO_Port GPIOD
 #define LED_Y_Pin GPIO_PIN_14
 #define LED_Y_GPIO_Port GPIOD
 #define LED_X_Pin GPIO_PIN_15

@@ -29,6 +29,8 @@
 #include "bno055.h"
 #include "dfrobot_imu.h"
 #include "motor_driver.h"
+#include "pd_algorithm.h"
+#include "encoder.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -54,6 +56,8 @@ int16_t		gyro_x, gyro_y, gyro_z;
 unsigned int rot;
 int duty;
 
+uint16_t pulse_count; // Licznik impulsow
+float vel = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -77,6 +81,7 @@ int main(void)
 
 	//structure for motor1 driver
 	Motor_HandleTypeDef motor1;
+	Encoder_HandleTypeDef encoder_z;
 
 	//Variables for euler data non calibrated
 	uint8_t imu_eul_x[2];
@@ -105,19 +110,33 @@ int main(void)
   MX_GPIO_Init();
   MX_I2C1_Init();
   MX_TIM1_Init();
+  MX_TIM2_Init();
+  MX_TIM3_Init();
+  MX_TIM4_Init();
+  MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
 
-  //Values set for structure
+  //Values set for motor structure
   motor1.timer = &htim1;
   motor1.channel = TIM_CHANNEL_1;
   motor1.gpio_port = GPIOA;
   motor1.pin_gpio = GPIO_PIN_8;
 
+  //Values set for encoder structure
+  encoder_z.timer = &htim2;
+  encoder_z.channel = TIM_CHANNEL_ALL;
+  encoder_z.max_impulse = 600;
+  encoder_z.actual_impulse = 0;
+
+  //Start PWM for motor 1
   Start_PWM_Motor_Z(&motor1);
 
-
-  //HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+  //Initalize IMU
   IMU_Initialize(&hi2c1);
+
+  //Start timer for encoder
+  Encoder_Start(&encoder_z);
+
 
   /* USER CODE END 2 */
 
@@ -147,18 +166,19 @@ int main(void)
 	  HAL_Delay(100);
 	   */
 
+
+	  Correct(intended_val, z, 0.1, , last_m, derivative);
+
 	  // MOTOR DRIVER
-	  Speed_Motor(&motor1, 1, 0);
-	  HAL_Delay(2000);
-	  Speed_Motor(&motor1, 1, 200);
-	  HAL_Delay(2000);
-	  Speed_Motor(&motor1, 1, 400);
-	  HAL_Delay(2000);
-	  Speed_Motor(&motor1, 1, 600);
-	  HAL_Delay(2000);
-	  Speed_Motor(&motor1, 1, 800);
 
+	  Speed_Motor(&motor1, 1, 500);
 
+	  //Encoder readings
+
+	  vel = Get_encoder_readings(&encoder_z, 0.1);
+	  pulse_count = encoder_z.actual_impulse;
+
+	  HAL_Delay(100);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
