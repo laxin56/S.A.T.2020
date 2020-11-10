@@ -13,12 +13,12 @@
 #include "main.h"
 
 //Variables to correctly set regulator PD
-#define KP 11
-#define KD 12
+#define KP 1000
+#define KD 500
 
-extern double out;
+
 
 //Declaration of pd algorithm function
-double Correct(float intended_val, float real_val, uint16_t dt, double* blad, double *wczesniejszy_blad, double *pochodna);
+double Correct(double intended_val, double real_val, double dt, double*, double*, double*);
 
 #endif /* INC_PD_ALGORITHM_H_ */

@@ -10,7 +10,7 @@
 
 #include "encoder.h"
 
-double velocity = 0;
+
 
 /*
  * This function start timer encoder mode
@@ -30,6 +30,7 @@ void Encoder_Start(Encoder_HandleTypeDef* encoder)
  */
 double Get_encoder_readings(Encoder_HandleTypeDef* encoder, double time)
 	{
+	double velocity = 0;
 
 		//Getting impulses from TIM counter register
 		encoder->actual_impulse = encoder->timer->Instance->CNT;

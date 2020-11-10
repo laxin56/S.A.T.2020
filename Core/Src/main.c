@@ -51,13 +51,19 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-float x,y,z;
-int16_t		gyro_x, gyro_y, gyro_z;
+double x,y,z;
+//int16_t		gyro_x, gyro_y, gyro_z;
 unsigned int rot;
 int duty;
 
 uint16_t pulse_count; // Licznik impulsow
-float vel = 0;
+double vel = 0;
+
+double *blad;
+double *ostatni_blad;
+double *pochodna;
+
+double _wyj = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -83,10 +89,12 @@ int main(void)
 	Motor_HandleTypeDef motor1;
 	Encoder_HandleTypeDef encoder_z;
 
+
 	//Variables for euler data non calibrated
 	uint8_t imu_eul_x[2];
 	uint8_t	imu_eul_y[2];
 	uint8_t	imu_eul_z[2];
+
 
   /* USER CODE END 1 */
 
@@ -131,7 +139,7 @@ int main(void)
   //Start PWM for motor 1
   Start_PWM_Motor_Z(&motor1);
 
-  //Initalize IMU
+  //Initailize IMU
   IMU_Initialize(&hi2c1);
 
   //Start timer for encoder
@@ -145,40 +153,46 @@ int main(void)
   while (1)
   {
 	  // IMU SENSOR
-	  /*
 
-	  Euler_Data(&hi2c1, (uint8_t*)imu_eul_x, (uint8_t*)imu_eul_y, (uint8_t*)imu_eul_z);
-
-	  gyro_x = (int16_t)((((uint8_t*)imu_eul_x)[1] << 8)  | ((uint8_t*)imu_eul_x)[0]);
-
-	  gyro_y = (int16_t)((((uint8_t*)imu_eul_y)[1] << 8)  | ((uint8_t*)imu_eul_y)[0]);
-
-	  gyro_z = (int16_t)((((uint8_t*)imu_eul_z)[1] << 8)  | ((uint8_t*)imu_eul_z)[0]);
-
-	  x = ((float)(gyro_x))/16.0f;
-	  y = ((float)(gyro_y))/16.0f;
-	  z = ((float)(gyro_z))/16.0f;
-
-
-
-	  HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_14);
+	  Euler_Data(&hi2c1, &x, &y, &z);
 
 	  HAL_Delay(100);
-	   */
 
+	  //PD algorithm
 
-	  Correct(intended_val, z, 0.1, , last_m, derivative);
+	  _wyj = Correct(180, z, 0.01, &blad, &ostatni_blad, &pochodna);
 
-	  // MOTOR DRIVER
+	  if(_wyj > 20000)
+	  {
+		  _wyj = 0;
+	  }
+	  else if(_wyj < -20000)
+	  {
+		  _wyj = 0;
+	  }
 
-	  Speed_Motor(&motor1, 1, 500);
+	  //Setting speed and rotation direction for MOTOR DRIVER
+	  if(*blad <= -180)
+	  {
+		  Speed_Motor(&motor1, 1, (uint16_t)_wyj);
+	  }
+	  else if(*blad > -180)
+	  {
+		  Speed_Motor(&motor1, 0, (uint16_t)_wyj);
+	  }
+	  else
+	  {
+		  //do nothing
+	  }
+/*
+	  //Speed_Motor(&motor1, 1, (uint16_t)_wyj);
 
 	  //Encoder readings
 
-	  vel = Get_encoder_readings(&encoder_z, 0.1);
-	  pulse_count = encoder_z.actual_impulse;
+	  //vel = Get_encoder_readings(&encoder_z, 0.1);
+	 // pulse_count = encoder_z.actual_impulse;
 
-	  HAL_Delay(100);
+	  */
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

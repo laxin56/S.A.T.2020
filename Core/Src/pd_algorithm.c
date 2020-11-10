@@ -7,9 +7,10 @@
 
 #include "pd_algorithm.h"
 
-double out = 0;
+
 
 /*
+ *
  * This function is calculating the correct output
  * Out - corrected value for the output
  * In param
@@ -19,10 +20,12 @@ double out = 0;
  * m - mistake
  * last_m - remembering previous mistake
  * derivative - variable for calculating derivative in algorithm equations
+ *
  */
-double Correct(float intended_val, float real_val, uint16_t dt, double* m, double *last_m, double *derivative)
+double Correct(double intended_val, double real_val, double dt, double* m, double *last_m, double *derivative)
 	{
 
+	double out = 0;
 
 		*m = intended_val - real_val;
 
@@ -30,7 +33,7 @@ double Correct(float intended_val, float real_val, uint16_t dt, double* m, doubl
 
 		out = (*m)*KP + (*derivative)*KD;
 
-		last_m = m;
+		*last_m = *m;
 
 		return out;
 

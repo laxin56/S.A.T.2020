@@ -13,6 +13,9 @@ uint8_t GYRO_Mode = NormalG;
 uint8_t Power_Mode = Normalpwr;
 uint8_t Operation_Mode = NDOF;  //Only GYRO is working
 
+
+//Global variables for angle values
+
 void IMU_Initialize(I2C_HandleTypeDef *hi2c_d)
 {
 
@@ -55,6 +58,7 @@ void IMU_Initialize(I2C_HandleTypeDef *hi2c_d)
 
 }
 
+//UNFINISHED FUNCTION
 uint8_t Gyro_Data(I2C_HandleTypeDef *hi2c_d, uint8_t* gyro_data)
 {
 	uint8_t status;
@@ -69,20 +73,54 @@ uint8_t Gyro_Data(I2C_HandleTypeDef *hi2c_d, uint8_t* gyro_data)
 
 
 /*
- * Read Euler Angles
+ * Functions that gets Euler Angles
  * 6 for: X - L i M, Y - L i M, Z - L i M
- *
+ *	all six bites - lower and higher
+ *	For ROLL, PITCH AND YAW
  */
 
-uint8_t Euler_Data(I2C_HandleTypeDef *hi2c_d, uint8_t* eul_roll_x, uint8_t* eul_pitch_y, uint8_t* eul_heading_z)
-{
-	uint8_t status;
 
-	status = HAL_I2C_Mem_Read(hi2c_d, IMU_ADDRESS, BNO055_EUL_ROLL_LSB, I2C_MEMADD_SIZE_8BIT, eul_roll_x, 2, 100);
-	status = HAL_I2C_Mem_Read(hi2c_d, IMU_ADDRESS, BNO055_EUL_PITCH_LSB, I2C_MEMADD_SIZE_8BIT, eul_pitch_y, 2, 100);
-	status = HAL_I2C_Mem_Read(hi2c_d, IMU_ADDRESS, BNO055_EUL_HEADING_LSB, I2C_MEMADD_SIZE_8BIT, eul_heading_z, 2, 100);
+void Euler_Data(I2C_HandleTypeDef *hi2c_d, double *x, double *y, double *z){
 
 
-	return status;
+	uint8_t eul_roll_x[2];
+	uint8_t eul_pitch_y[2];
+	uint8_t eul_heading_z[2];
+
+	int16_t	 gyro_x, gyro_y, gyro_z;
+
+
+	//roll
+	HAL_I2C_Mem_Read(hi2c_d, IMU_ADDRESS, BNO055_EUL_ROLL_LSB, I2C_MEMADD_SIZE_8BIT, eul_roll_x, 2, 100);
+	//pitch
+	HAL_I2C_Mem_Read(hi2c_d, IMU_ADDRESS, BNO055_EUL_PITCH_LSB, I2C_MEMADD_SIZE_8BIT, eul_pitch_y, 2, 100);
+	//yaw - heading
+	HAL_I2C_Mem_Read(hi2c_d, IMU_ADDRESS, BNO055_EUL_HEADING_LSB, I2C_MEMADD_SIZE_8BIT, eul_heading_z, 2, 100);
+
+	//Connecting Lower ang higher bites of data
+	gyro_x = (int16_t)(((uint8_t)eul_roll_x[1] << 8)  | (uint8_t)eul_roll_x[0]);
+
+	gyro_y = (int16_t)(((uint8_t)eul_pitch_y[1] << 8)  | (uint8_t)eul_pitch_y[0]);
+
+	gyro_z = (int16_t)(((uint8_t)eul_heading_z[1] << 8)  | (uint8_t)eul_heading_z[0]);
+
+	//Transfering data to correct unit - angle
+	*x = ((double)(gyro_x))/16.0f;
+	*y = ((double)(gyro_y))/16.0f;
+	*z = ((double)(gyro_z))/16.0f;
+
 }
 
+/*
+void Euler_Data(I2C_HandleTypeDef *hi2c_d, uint8_t* eul_roll_x, uint8_t* eul_pitch_y, uint8_t* eul_heading_z){
+
+	//roll
+	HAL_I2C_Mem_Read(hi2c_d, IMU_ADDRESS, BNO055_EUL_ROLL_LSB, I2C_MEMADD_SIZE_8BIT, eul_roll_x, 2, 100);
+	//pitch
+	HAL_I2C_Mem_Read(hi2c_d, IMU_ADDRESS, BNO055_EUL_PITCH_LSB, I2C_MEMADD_SIZE_8BIT, eul_pitch_y, 2, 100);
+	//yaw - heading
+	HAL_I2C_Mem_Read(hi2c_d, IMU_ADDRESS, BNO055_EUL_HEADING_LSB, I2C_MEMADD_SIZE_8BIT, eul_heading_z, 2, 100);
+
+
+}
+*/
