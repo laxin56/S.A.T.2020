@@ -41,6 +41,18 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
+/*
+ * *****************************************
+ * Stable Values for Attitude Control System
+ * Yaw (Heading) 	- Z
+ * Pitch 			- Y
+ * Roll				- X
+ * *****************************************
+ */
+#define angle_roll 	0
+#define angle_pitch	0
+#define angle_yaw	180
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -52,18 +64,25 @@
 
 /* USER CODE BEGIN PV */
 double x,y,z;
-//int16_t		gyro_x, gyro_y, gyro_z;
+
 unsigned int rot;
+
 int duty;
 
 uint16_t pulse_count; // Licznik impulsow
+
 double vel = 0;
 
-double *blad;
-double *ostatni_blad;
-double *pochodna;
+//Global variables for PD algorithm
+double blad;
+double ostatni_blad;
+double pochodna;
 
-double _wyj = 0;
+//Variables for PD corrected values
+double out_roll = 0;
+double out_pitch = 0;
+double out_yaw = 0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -85,16 +104,11 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
 
-	//structure for motor1 driver
+	//Object for motor driver structure
 	Motor_HandleTypeDef motor1;
+
+	//Encoder object structure
 	Encoder_HandleTypeDef encoder_z;
-
-
-	//Variables for euler data non calibrated
-	uint8_t imu_eul_x[2];
-	uint8_t	imu_eul_y[2];
-	uint8_t	imu_eul_z[2];
-
 
   /* USER CODE END 1 */
 
@@ -152,47 +166,40 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  // IMU SENSOR
 
+	  // IMU SENSOR
 	  Euler_Data(&hi2c1, &x, &y, &z);
 
-	  HAL_Delay(100);
-
 	  //PD algorithm
+	  out_yaw = Correct(angle_yaw, z, 0.01, &blad, &ostatni_blad, &pochodna);
 
-	  _wyj = Correct(180, z, 0.01, &blad, &ostatni_blad, &pochodna);
-
-	  if(_wyj > 20000)
+	 //Out value must be set from -1000 to 1000
+	  if(out_yaw >= 1100){
+		  out_yaw = 1100;
+	  }else if(out_yaw <= -1100)
 	  {
-		  _wyj = 0;
-	  }
-	  else if(_wyj < -20000)
-	  {
-		  _wyj = 0;
+		  out_yaw = -1100;
 	  }
 
 	  //Setting speed and rotation direction for MOTOR DRIVER
-	  if(*blad <= -180)
+	  if(blad >= 0){
+
+		  Speed_Motor(&motor1, 1, (uint16_t)out_yaw);
+
+	  }else if(blad < 0)
 	  {
-		  Speed_Motor(&motor1, 1, (uint16_t)_wyj);
+		  out_yaw = out_yaw*(-1);
+		  Speed_Motor(&motor1, 0, (uint16_t)out_yaw);
+
 	  }
-	  else if(*blad > -180)
-	  {
-		  Speed_Motor(&motor1, 0, (uint16_t)_wyj);
-	  }
-	  else
-	  {
-		  //do nothing
-	  }
+
+	  HAL_Delay(100);
 /*
-	  //Speed_Motor(&motor1, 1, (uint16_t)_wyj);
+	  Encoder readings
+	  vel = Get_encoder_readings(&encoder_z, 0.1);
+	  pulse_count = encoder_z.actual_impulse;
 
-	  //Encoder readings
-
-	  //vel = Get_encoder_readings(&encoder_z, 0.1);
-	 // pulse_count = encoder_z.actual_impulse;
-
-	  */
+*/
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
