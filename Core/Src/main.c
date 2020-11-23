@@ -141,8 +141,8 @@ int main(void)
   //Values set for motor structure
   motor1.timer = &htim1;
   motor1.channel = TIM_CHANNEL_1;
-  motor1.gpio_port = GPIOA;
-  motor1.pin_gpio = GPIO_PIN_8;
+  motor1.gpio_port = GPIOD;
+  motor1.pin_gpio = GPIO_PIN_14;
 
   //Values set for encoder structure
   encoder_z.timer = &htim2;
@@ -167,6 +167,7 @@ int main(void)
   while (1)
   {
 
+	  /*
 	  // IMU SENSOR
 	  Euler_Data(&hi2c1, &x, &y, &z);
 
@@ -193,7 +194,20 @@ int main(void)
 
 	  }
 
-	  HAL_Delay(100);
+	  */
+
+	  Euler_Data(&hi2c1, &x, &y, &z);
+	  HAL_Delay(200);
+/*
+	  Speed_Motor(&motor1, 0, 200);
+
+	  HAL_Delay(3000);
+
+	  Speed_Motor(&motor1, 1, 200);
+
+	 	  HAL_Delay(3000);
+	 	  */
+
 /*
 	  Encoder readings
 	  vel = Get_encoder_readings(&encoder_z, 0.1);

@@ -111,6 +111,7 @@ void Euler_Data(I2C_HandleTypeDef *hi2c_d, double *x, double *y, double *z){
 
 }
 
+
 /*
 void Euler_Data(I2C_HandleTypeDef *hi2c_d, uint8_t* eul_roll_x, uint8_t* eul_pitch_y, uint8_t* eul_heading_z){
 
