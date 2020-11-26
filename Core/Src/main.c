@@ -21,7 +21,9 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "i2c.h"
+#include "spi.h"
 #include "tim.h"
+#include "usart.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -31,6 +33,7 @@
 #include "motor_driver.h"
 #include "pd_algorithm.h"
 #include "encoder.h"
+#include "SSD1331.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -63,7 +66,10 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+//Global Variables to read Euler data
 double x,y,z;
+double _z,_x,_y;
+
 
 unsigned int rot;
 
@@ -73,10 +79,20 @@ uint16_t pulse_count; // Licznik impulsow
 
 double vel = 0;
 
-//Global variables for PD algorithm
-double blad;
-double ostatni_blad;
-double pochodna;
+//Global variables for PD algorithm - Motor 1
+double blad_1;
+double ostatni_blad_1;
+double pochodna_1;
+
+//Global variables for PD algorithm - Motor 2
+double blad_2;
+double ostatni_blad_2;
+double pochodna_2;
+
+//Global variables for PD algorithm - Motor 3
+double blad_3;
+double ostatni_blad_3;
+double pochodna_3;
 
 //Variables for PD corrected values
 double out_roll = 0;
@@ -104,8 +120,10 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
 
-	//Object for motor driver structure
+	//Objects for motor driver structure
 	Motor_HandleTypeDef motor1;
+	Motor_HandleTypeDef motor2;
+	Motor_HandleTypeDef motor3;
 
 	//Encoder object structure
 	Encoder_HandleTypeDef encoder_z;
@@ -133,16 +151,27 @@ int main(void)
   MX_I2C1_Init();
   MX_TIM1_Init();
   MX_TIM2_Init();
-  MX_TIM3_Init();
-  MX_TIM4_Init();
-  MX_TIM5_Init();
+  MX_SPI1_Init();
+  MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  //Values set for motor structure
+  //Values set for motor1 structure
   motor1.timer = &htim1;
   motor1.channel = TIM_CHANNEL_1;
-  motor1.gpio_port = GPIOD;
-  motor1.pin_gpio = GPIO_PIN_14;
+  motor1.gpio_port = GPIOA;
+  motor1.pin_gpio = GPIO_PIN_10;
+
+  //Values set for motor2 structure
+  motor2.timer = &htim1;
+  motor2.channel = TIM_CHANNEL_2;
+  motor2.gpio_port = GPIOA;
+  motor2.pin_gpio = GPIO_PIN_9;
+
+  //Values set for motor3 structure
+  motor3.timer = &htim1;
+  motor3.channel = TIM_CHANNEL_3;
+  motor3.gpio_port = GPIOA;
+  motor3.pin_gpio = GPIO_PIN_8;
 
   //Values set for encoder structure
   encoder_z.timer = &htim2;
@@ -150,15 +179,20 @@ int main(void)
   encoder_z.max_impulse = 600;
   encoder_z.actual_impulse = 0;
 
-  //Start PWM for motor 1
+  //Start PWM for motor 1,2,3
   Start_PWM_Motor_Z(&motor1);
+  Start_PWM_Motor_Z(&motor2);
+  Start_PWM_Motor_Z(&motor3);
 
-  //Initailize IMU
+  //Initialize DFROBOT_IMU
   IMU_Initialize(&hi2c1);
 
   //Start timer for encoder
   Encoder_Start(&encoder_z);
 
+  //ssd1331_init();
+  //sd1331_clear_screen(BLACK);
+  //ssd1331_display_string(0, 0, "Hello World!", FONT_1608, GREEN);
 
   /* USER CODE END 2 */
 
@@ -167,46 +201,38 @@ int main(void)
   while (1)
   {
 
-	  /*
 	  // IMU SENSOR
 	  Euler_Data(&hi2c1, &x, &y, &z);
 
-	  //PD algorithm
-	  out_yaw = Correct(angle_yaw, z, 0.01, &blad, &ostatni_blad, &pochodna);
+	  //PD algorithm for all axes
+	  out_roll = Correct(angle_roll, x, 0.01, &blad_1, &ostatni_blad_1, &pochodna_1);
+	  out_pitch = Correct(angle_pitch, y, 0.01, &blad_2, &ostatni_blad_2, &pochodna_2);
+	  out_yaw = Correct(angle_yaw, z, 0.01, &blad_3, &ostatni_blad_3, &pochodna_3);
 
-	 //Out value must be set from -1000 to 1000
-	  if(out_yaw >= 1100){
-		  out_yaw = 1100;
-	  }else if(out_yaw <= -1100)
-	  {
-		  out_yaw = -1100;
-	  }
+	  //Send x,y,z values via Bluetooth
 
-	  //Setting speed and rotation direction for MOTOR DRIVER
-	  if(blad >= 0){
+	  //Out value must be set from -1000 to 1000
+	  //Cutting the noise values
+	  if(out_roll >= 700) out_roll = 700;
+	  else if(out_roll <= -1000) out_roll = 1000;
 
-		  Speed_Motor(&motor1, 1, (uint16_t)out_yaw);
+	  if(out_pitch >= 700) out_pitch = 700;
+	  else if(out_pitch <= -1000) out_pitch = 1000;
 
-	  }else if(blad < 0)
-	  {
-		  out_yaw = out_yaw*(-1);
-		  Speed_Motor(&motor1, 0, (uint16_t)out_yaw);
+	  if(out_yaw >= 700) out_yaw = 700;
+	  else if(out_yaw <= -1000) out_yaw = 1000;
 
-	  }
+	  //Setting speed and rotation direction for MOTOR
+	  if(blad_1 >= 0) Speed_Motor(&motor1, 1, (uint16_t)out_roll);
+	  else if(blad_1 < 0) Speed_Motor(&motor1, 0, (uint16_t)(out_roll*(-1)));
 
-	  */
+	  if(blad_2 >= 0) Speed_Motor(&motor2, 1, (uint16_t)out_pitch);
+	  else if(blad_2 < 0) Speed_Motor(&motor2, 0, (uint16_t)(out_pitch*(-1)));
 
-	  Euler_Data(&hi2c1, &x, &y, &z);
-	  HAL_Delay(200);
-/*
-	  Speed_Motor(&motor1, 0, 200);
+	  if(blad_3 >= 0) Speed_Motor(&motor3, 1, (uint16_t)out_yaw);
+	  else if(blad_3 < 0) Speed_Motor(&motor3, 0, (uint16_t)(out_yaw*(-1)));
 
-	  HAL_Delay(3000);
 
-	  Speed_Motor(&motor1, 1, 200);
-
-	 	  HAL_Delay(3000);
-	 	  */
 
 /*
 	  Encoder readings
