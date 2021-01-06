@@ -59,12 +59,13 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define CS_Pin GPIO_PIN_5
-#define CS_GPIO_Port GPIOC
-#define DC_Pin GPIO_PIN_1
-#define DC_GPIO_Port GPIOB
-#define RESET_Pin GPIO_PIN_7
-#define RESET_GPIO_Port GPIOE
+#define Blue_Button_Pin GPIO_PIN_0
+#define Blue_Button_GPIO_Port GPIOA
+#define Blue_Button_EXTI_IRQn EXTI0_IRQn
+#define Transmit_Pin GPIO_PIN_2
+#define Transmit_GPIO_Port GPIOA
+#define Receive_Pin GPIO_PIN_3
+#define Receive_GPIO_Port GPIOA
 #define PWM1_Pin GPIO_PIN_9
 #define PWM1_GPIO_Port GPIOE
 #define PWM2_Pin GPIO_PIN_11
@@ -83,6 +84,10 @@ void Error_Handler(void);
 #define Motor_Y_Direction_GPIO_Port GPIOA
 #define Motor_X_Direction_Pin GPIO_PIN_10
 #define Motor_X_Direction_GPIO_Port GPIOA
+#define Imu_Clock_Pin GPIO_PIN_6
+#define Imu_Clock_GPIO_Port GPIOB
+#define Imu_Data_Pin GPIO_PIN_9
+#define Imu_Data_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

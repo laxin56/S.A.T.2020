@@ -21,7 +21,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "i2c.h"
-#include "spi.h"
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
@@ -33,7 +32,8 @@
 #include "motor_driver.h"
 #include "pd_algorithm.h"
 #include "encoder.h"
-#include "SSD1331.h"
+#include <stdio.h>
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -52,9 +52,9 @@
  * Roll				- X
  * *****************************************
  */
-#define angle_roll 	0
-#define angle_pitch	0
-#define angle_yaw	180
+int angle_roll 	= 	0;
+int angle_pitch	=	0;
+int angle_yaw	=	180;
 
 /* USER CODE END PD */
 
@@ -69,15 +69,12 @@
 //Global Variables to read Euler data
 double x,y,z;
 double _z,_x,_y;
-
-
+int time = 0;
 unsigned int rot;
-
-int duty;
-
-uint16_t pulse_count; // Licznik impulsow
-
-double vel = 0;
+volatile int flag = 0;
+//int duty;
+//uint16_t pulse_count; // Licznik impulsow
+//double vel = 0;
 
 //Global variables for PD algorithm - Motor 1
 double blad_1;
@@ -105,6 +102,37 @@ double out_yaw = 0;
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+	if(htim->Instance == TIM2)
+	{
+
+		 uint8_t data[100];   	// Tablica przechowujaca wysylana wiadomosc.
+		 uint16_t size = 0; 	// Rozmiar wysylanej wiadomosci ++cnt;
+
+		 //Zliczanie czasu
+		 time += 200;
+
+		 // Wysylanie informacji do zewnetrznego urzadzenia
+		 size = sprintf(data, "%.4f \t %d \n\r", z, time);
+		 HAL_UART_Transmit_IT(&huart2, data, size);
+		 HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_14);
+	}
+}
+
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+
+
+	if(flag == 0)
+	flag = 1;
+
+	else if (flag == 1){
+	flag = 0;
+	}
+	//HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_13);
+}
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -151,8 +179,8 @@ int main(void)
   MX_I2C1_Init();
   MX_TIM1_Init();
   MX_TIM2_Init();
-  MX_SPI1_Init();
   MX_USART2_UART_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
 
   //Values set for motor1 structure
@@ -179,6 +207,8 @@ int main(void)
   encoder_z.max_impulse = 600;
   encoder_z.actual_impulse = 0;
 
+  HAL_TIM_Base_Start_IT(&htim2);
+
   //Start PWM for motor 1,2,3
   Start_PWM_Motor_Z(&motor1);
   Start_PWM_Motor_Z(&motor2);
@@ -190,10 +220,6 @@ int main(void)
   //Start timer for encoder
   Encoder_Start(&encoder_z);
 
-  //ssd1331_init();
-  //sd1331_clear_screen(BLACK);
-  //ssd1331_display_string(0, 0, "Hello World!", FONT_1608, GREEN);
-
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -203,36 +229,33 @@ int main(void)
 
 	  // IMU SENSOR
 	  Euler_Data(&hi2c1, &x, &y, &z);
-
 	  //PD algorithm for all axes
-	  out_roll = Correct(angle_roll, x, 0.01, &blad_1, &ostatni_blad_1, &pochodna_1);
-	  out_pitch = Correct(angle_pitch, y, 0.01, &blad_2, &ostatni_blad_2, &pochodna_2);
-	  out_yaw = Correct(angle_yaw, z, 0.01, &blad_3, &ostatni_blad_3, &pochodna_3);
-
-	  //Send x,y,z values via Bluetooth
 
 	  //Out value must be set from -1000 to 1000
 	  //Cutting the noise values
-	  if(out_roll >= 700) out_roll = 700;
-	  else if(out_roll <= -1000) out_roll = 1000;
+	  if(out_roll >= 600) out_roll = 600;
+	  else if(out_roll <= -600) out_roll = -600;
 
-	  if(out_pitch >= 700) out_pitch = 700;
-	  else if(out_pitch <= -1000) out_pitch = 1000;
+	  if(out_pitch >= 600) out_pitch = 600;
+	  else if(out_pitch <= -600) out_pitch = -600;
 
 	  if(out_yaw >= 700) out_yaw = 700;
-	  else if(out_yaw <= -1000) out_yaw = 1000;
+	  else if(out_yaw <= -700) out_yaw = -700;
 
+	  //DODATNIA W PRAWO - UJEMNA W LEWO
 	  //Setting speed and rotation direction for MOTOR
+
 	  if(blad_1 >= 0) Speed_Motor(&motor1, 1, (uint16_t)out_roll);
 	  else if(blad_1 < 0) Speed_Motor(&motor1, 0, (uint16_t)(out_roll*(-1)));
 
 	  if(blad_2 >= 0) Speed_Motor(&motor2, 1, (uint16_t)out_pitch);
 	  else if(blad_2 < 0) Speed_Motor(&motor2, 0, (uint16_t)(out_pitch*(-1)));
 
-	  if(blad_3 >= 0) Speed_Motor(&motor3, 1, (uint16_t)out_yaw);
-	  else if(blad_3 < 0) Speed_Motor(&motor3, 0, (uint16_t)(out_yaw*(-1)));
+	  if(blad_3 >= 0) Speed_Motor(&motor3, 0, (uint16_t)out_yaw);
+	  else if(blad_3 < 0) Speed_Motor(&motor3, 1, (uint16_t)(out_yaw*(-1)));
 
 
+	  HAL_Delay(100);
 
 /*
 	  Encoder readings
@@ -262,12 +285,11 @@ void SystemClock_Config(void)
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
   /** Initializes the CPU, AHB and APB busses clocks 
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  RCC_OscInitStruct.PLL.PLLM = 8;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLM = 4;
   RCC_OscInitStruct.PLL.PLLN = 80;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 4;

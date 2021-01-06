@@ -22,7 +22,7 @@
  * derivative - variable for calculating derivative in algorithm equations
  *
  */
-double Correct(double intended_val, double real_val, double dt, double* m, double *last_m, double *derivative)
+double Correct1(double intended_val, double real_val, double dt, double* m, double *last_m, double *derivative)
 	{
 
 	double out = 0;
@@ -31,7 +31,7 @@ double Correct(double intended_val, double real_val, double dt, double* m, doubl
 
 		*derivative = (*m - *last_m)*dt;
 
-		out = (*m)*KP + (*derivative)*KD;
+		out = (*m)*KP1 + (*derivative)*KD1;
 
 		*last_m = *m;
 
@@ -39,4 +39,36 @@ double Correct(double intended_val, double real_val, double dt, double* m, doubl
 
 	}
 
+double Correct2(double intended_val, double real_val, double dt, double* m, double *last_m, double *derivative)
+	{
 
+	double out = 0;
+
+		*m = intended_val - real_val;
+
+		*derivative = (*m - *last_m)*dt;
+
+		out = (*m)*KP2 + (*derivative)*KD2;
+
+		*last_m = *m;
+
+		return out;
+
+	}
+
+double Correct3(double intended_val, double real_val, double dt, double* m, double *last_m, double *derivative)
+	{
+
+	double out = 0;
+
+		*m = intended_val - real_val;
+
+		*derivative = (*m - *last_m)*dt;
+
+		out = (*m)*KP3 + (*derivative)*KD3;
+
+		*last_m = *m;
+
+		return out;
+
+	}

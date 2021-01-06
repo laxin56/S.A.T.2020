@@ -18,7 +18,6 @@ typedef struct Motor{
 	uint16_t pin_gpio;			//uchwyt do pinu GPIO - zmiana kierunku rotacji
 	GPIO_TypeDef* gpio_port;	//uchwyt do portu GPIO - zmiana kierunku rotacji
 
-	//unsigned int duty;			//Wypelnienie PWM
 
 }Motor_HandleTypeDef;
 
